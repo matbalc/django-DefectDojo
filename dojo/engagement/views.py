@@ -21,7 +21,7 @@ from time import strftime
 from django.contrib.admin.utils import NestedObjects
 from django.db import DEFAULT_DB_ALIAS
 
-from dojo.engagement.services import close_engagement, reopen_engagement
+from dojo.engagement.services import close_engagement, reopen_engagement, validate_engagement
 from dojo.filters import EngagementFilter, EngagementDirectFilter, EngagementTestFilter
 from dojo.forms import CheckForm, \
     UploadThreatForm, RiskAcceptanceForm, NoteForm, DoneForm, \
@@ -1334,3 +1334,19 @@ def excel_export(request):
     )
     response['Content-Disposition'] = 'attachment; filename=engagements.xlsx'
     return response
+
+
+@user_is_authorized(Engagement, Permissions.Engagement_View, 'eid')
+def validate_eng(request, eid):
+    eng = Engagement.objects.get(id=eid)
+    validation = validate_engagement(eng)
+    messages.add_message(
+        request,
+        messages.SUCCESS,
+        'Engagement validation completed successfully.',
+        extra_tags='alert-success')
+    create_notification(event='other',
+                        title='Validation of %s' % eng.name,
+                        engagement=eng,
+                        description='The engagement "%s" validation passed: "%s"' % (eng.name, validation.valid),
+                        url=reverse('validate_engagement', args=(eng.id, ))),

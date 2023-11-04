@@ -2,7 +2,8 @@ from auditlog.models import LogEntry
 from django.contrib import admin
 from polymorphic.admin import PolymorphicParentModelAdmin, PolymorphicChildModelAdmin
 from dojo.models import Question, TextQuestion, ChoiceQuestion, Choice, \
-    Answer, TextAnswer, ChoiceAnswer, Engagement_Survey, Answered_Survey
+    Answer, TextAnswer, ChoiceAnswer, Engagement_Survey, Answered_Survey, \
+    EngagementValidation, ResidualRiskSettings
 
 admin.site.unregister(LogEntry)
 
@@ -91,3 +92,5 @@ admin.site.register(ChoiceAnswer, ChoiceAnswerAdmin)
 admin.site.register(Answer, AnswerParentAdmin)
 admin.site.register(Engagement_Survey)
 admin.site.register(Answered_Survey)
+admin.site.register(EngagementValidation)
+admin.site.register(ResidualRiskSettings)

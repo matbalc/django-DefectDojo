@@ -54,4 +54,7 @@ urlpatterns = [
         views.csv_export, name='engagement_csv_export'),
     re_path(r'^engagement/excel_export$',
         views.excel_export, name='engagement_excel_export'),
+    re_path(r'^engagement/(?P<eid>\d+)/validate$', views.validate_eng,
+        name='validate_engagement'),
+
 ]

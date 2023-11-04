@@ -86,6 +86,7 @@ from dojo.models import (
     Answered_Survey,
     General_Survey,
     Check_List,
+    EngagementValidation,
 )
 
 from dojo.tools.factory import (
@@ -3147,3 +3148,49 @@ class QuestionnaireGeneralSurveySerializer(serializers.ModelSerializer):
     class Meta:
         model = General_Survey
         fields = "__all__"
+
+
+class EngagementValidationSerializer(serializers.ModelSerializer):
+    tests = serializers.SerializerMethodField()
+
+    def get_tests(self, obj):
+        print(f"DEBUG: start")
+        __tests = {}
+        print(f"DEBUG: start1")
+        for finding in obj.untolerable_findings.all():
+            #test = Test.objects.filter(pk=finding.test.id)
+            print(f"DEBUG: startas: {finding.test.title}")
+            if not finding.test.title in __tests:
+                __tests[finding.test.title] = dict()
+            finding_data = FindingSerializer(finding, many=False, read_only=True).data
+            __tests[finding.test.title][finding.title] = {
+                "id": finding_data["id"],
+                "tags": finding_data["tags"],
+                "age": finding_data["age"],
+                "display_status": finding_data["display_status"],
+                "vulnerability_ids": finding_data["vulnerability_ids"],
+                "date": finding_data["date"],
+                "cwe": finding_data["cwe"],
+                "cvssv3": finding_data["cvssv3"],
+                "cvssv3_score": finding_data["cvssv3_score"],
+                "url": finding_data["url"],
+                "severity": finding_data["severity"],
+                "description": finding_data["description"],
+                "mitigation": finding_data["mitigation"],
+                "references": finding_data["references"],
+                "numerical_severity": finding_data["numerical_severity"],
+                "hash_code": finding_data["hash_code"],
+                "component_name": finding_data["component_name"],
+                "component_version": finding_data["component_version"],
+                "service": finding_data["service"],
+                "residual_risk_score" : f'{finding_data["residual_risk_level"]:.3}'
+            }
+        print (f"DEBUG: response {__tests}")
+        return __tests
+    # tolerable_findings =  FindingSerializer(many=True, read_only=True)
+    # untolerable_findings = FindingSerializer(many=True, read_only=True)
+    engagement = EngagementSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = EngagementValidation
+        fields =  ["engagement", "valid", "generated", "tests"]

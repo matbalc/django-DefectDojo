@@ -2144,7 +2144,7 @@ class Finding(models.Model):
                            verbose_name=_("Vulnerability Id"),
                            help_text=_("An id of a vulnerability in a security advisory associated with this finding. Can be a Common Vulnerabilities and Exposures (CVE) or from other sources."))
     cvssv3_regex = RegexValidator(regex=r'^AV:[NALP]|AC:[LH]|PR:[UNLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]', message="CVSS must be entered in format: 'AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H'")
-    cvssv3 = models.TextField(validators=[cvssv3_regex],
+    cvssv3 = models.TextField(validators=[cvssv3_regex], # NOTE me: score to represent inheritent risk
                               max_length=117,
                               null=True,
                               verbose_name=_('CVSS v3'),
@@ -2429,6 +2429,12 @@ class Finding(models.Model):
                                 max_length=99,
                                 verbose_name=_('Effort for fixing'),
                                 help_text=_('Effort for fixing / remediating the vulnerability (Low, Medium, High)'))
+
+    residual_risk_level = models.FloatField(null=True,
+                                        blank=True,
+                                        verbose_name=_('Residual risk evaluation score from 1 to 10'),
+                                        help_text=_("Residual risk evaluation of vulnerability, based on multiple factors"))
+
 
     tags = TagField(blank=True, force_lowercase=True, help_text=_("Add tags that help describe this finding. Choose from the list or add new tags. Press Enter key to add."))
     inherited_tags = TagField(blank=True, force_lowercase=True, help_text=_("Internal use tags sepcifically for maintaining parity with product. This field will be present as a subset in the tags field"))
@@ -4258,6 +4264,59 @@ class ChoiceAnswer(Answer):
             return str(self.answer.all()[0])
         else:
             return 'No Response'
+
+
+class ResidualRiskSettings(models.Model):
+    name = models.CharField(null=True, blank=True, max_length=64)
+    evaluate_network_reachability = models.BooleanField(default=True)
+    evaluate_business_criticality = models.BooleanField(default=True)
+    evaluate_evaluate_cve = models.BooleanField(default=True)
+    network_reachability_weight = models.IntegerField(blank=True, null=True, default=25,
+                                    verbose_name=_('Weight of network reachability'),
+                                    help_text=_("How impactful network reachability should be. Sum of all weight should be 100"))
+    business_criticality_weight = models.IntegerField(blank=True, null=True, default=25,
+                                    verbose_name=_('Weight of business criticality'),
+                                    help_text=_("How impactful business_criticality should be. Sum of all weight should be 100"))
+    cve_weight = models.IntegerField(blank=True, null=True, default=50,
+                                    verbose_name=_('Weight of CVE score'),
+                                    help_text=_("How impactful cve score should be. Sum of all weight should be 100"))
+    is_default = models.BooleanField(default=False, verbose_name="Use as default configuration")
+
+    tolerance = models.IntegerField(blank=True, null=True, default = 6,
+                                    verbose_name=_('Tolerance level for residual risk'),
+                                    help_text=_('in scoring system from 0 to 10 tolerance identifies at what level risk is identified as untolerable'))
+
+    class Meta:
+        verbose_name = _("Residual Risk Settings")
+        verbose_name_plural = _("Residual Risk Settings")
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class EngagementValidation(models.Model):
+    engagement = models.ForeignKey(Engagement, on_delete=models.CASCADE)
+    generated = models.DateTimeField(auto_now_add=True, null=True)
+    tolerable_findings = models.ManyToManyField(Finding,
+                                       blank=True,
+                                       related_name='engagement_tolerable_finding',
+                                       verbose_name=_('TolerableFindings'),
+                                       help_text=_("Findings that are acceptable."))
+    untolerable_findings = models.ManyToManyField(Finding,
+                                       blank=True,
+                                       related_name='engagement_untolerable_finding',
+                                       verbose_name=_('UntolerableFindings'),
+                                       help_text=_("Findings that are NOT acceptable."))
+    valid = models.BooleanField(default=False)
+    evaluation_rules = models.ForeignKey(ResidualRiskSettings,  on_delete=models.RESTRICT, blank=True, null=True)
+    evaluate_residual_risk = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("Engagement Validation")
+        verbose_name_plural = _("Engagement Validations")
+
+    def __str__(self):
+        return f"{self.__dict__}"
 
 
 def enable_disable_auditlog(enable=True):

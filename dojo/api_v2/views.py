@@ -20,7 +20,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema, no_body
 import base64
 import mimetypes
-from dojo.engagement.services import close_engagement, reopen_engagement
+from dojo.engagement.services import close_engagement, reopen_engagement, validate_engagement
 from dojo.importers.reimporter.utils import (
     get_target_engagement_if_exists,
     get_target_product_if_exists,
@@ -759,6 +759,21 @@ class EngagementViewSet(
         ] = f'attachment; filename="{file_object.file.name}"'
 
         return response
+
+
+    @extend_schema(
+        request=OpenApiTypes.NONE, responses={status.HTTP_200_OK: serializers.EngagementValidationSerializer}
+    )
+    @swagger_auto_schema(
+        request_body=no_body, responses={status.HTTP_200_OK: serializers.EngagementValidationSerializer}
+    )
+    @action(detail=True, methods=["get"])
+    def validate(self, request, pk=None):
+        eng = self.get_object()
+        validation = validate_engagement(eng)
+        result = serializers.EngagementValidationSerializer(validation).data
+        return Response(result, status=status.HTTP_200_OK)
+
 
 
 class RiskAcceptanceViewSet(

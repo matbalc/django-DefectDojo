@@ -896,3 +896,18 @@ def re_import_scan_results(request, tid):
                    'jform': jform,
                    'scan_types': get_scan_types_sorted(),
                    })
+
+# @user_is_authorized(Engagement, Permissions.Engagement_View, 'eid')
+# def validate_eng(request, eid):
+#     eng = Engagement.objects.get(id=eid)
+#     validation = validate_engagement(eng)
+#     messages.add_message(
+#         request,
+#         messages.SUCCESS,
+#         'Test validation completed successfully.',
+#         extra_tags='alert-success')
+#     create_notification(event='other',
+#                         title='Validation of %s' % eng.name,
+#                         engagement=eng,
+#                         description='The engagement "%s" validation passed: "%s"' % (eng.name, validation.valid),
+#                         url=reverse('validate_engagement', args=(eng.id, )))
